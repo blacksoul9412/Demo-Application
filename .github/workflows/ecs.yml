@@ -27,7 +27,7 @@ jobs:
 
       - name: Create ECS Cluster
         run: |
-          aws ecs create-cluster --cluster-name demo-cluster --region us-east-1 || true
+          aws ecs create-cluster --cluster-name demo-cluster1 --region us-east-1 || true
 
       - name: Create ECR Repository
         run: |
