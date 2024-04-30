@@ -67,8 +67,8 @@ jobs:
           }
           }]' \
           )
-       echo "::set-output name=task_def::${TASK_DEF##*/}"
-      
+          echo "::set-output name=task_def::${TASK_DEF##*/}"
+
       - name: Create or update ECS service
         run: |
           aws ecs create-service \
