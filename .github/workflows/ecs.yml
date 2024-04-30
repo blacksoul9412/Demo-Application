@@ -23,8 +23,9 @@ jobs:
         run: |
           echo "::set-output name=password::$(aws ecr get-login-password --region ${{ secrets.AWS_DEFAULT_REGION }})"
         
-      - name: Login to AWS ECR
-        run: echo "${{ steps.ecr_login.outputs.password }}" | docker login --username AWS --password-stdin 891377199948.dkr.ecr.us-east-1.amazonaws.com
+      - name: Configure Docker to use AWS ECR
+        run: |
+          echo "${{ steps.ecr_login.outputs.password }}" | docker login --username AWS --password-stdin 891377199948.dkr.ecr.us-east-1.amazonaws.com
 
       - name: Build and push Docker image
         run: |
