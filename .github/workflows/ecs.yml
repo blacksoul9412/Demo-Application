@@ -48,7 +48,10 @@ jobs:
             --family demo-task \
             --execution-role-arn arn:aws:iam::891377199948:role/Demo_App_Role \
             --network-mode awsvpc \
-            --container-definitions '[{"name":"demo-container","image":"891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-app1:latest", "memory":512, "cpu":256}]' \
+            --cpu 256 \
+            --memory 512 \
+            --requires-compatibilities FARGATE \
+            --container-definitions '[{"name":"demo-container","image":"891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-app1:latest", "cpu":256, "memory":512}]' \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
