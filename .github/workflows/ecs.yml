@@ -51,7 +51,7 @@ jobs:
             --cpu 256 \
             --memory 512 \
             --requires-compatibilities FARGATE \
-            --container-definitions '[{"name":"demo-container","image":"891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-app1:latest", "cpu":256, "memory":512}]' \
+            --container-definitions '[{"name":"demo-container1","image":"891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-app1:latest", "cpu":256, "memory":512, "portMappings":[{"containerPort":3000,"protocol":"tcp"}], "logConfiguration": {"logDriver":"awslogs","options": {"awslogs-group":"/ecs/demo-cluster","awslogs-region":"us-east-1","awslogs-stream-prefix":"demo-task1"}}]' \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
@@ -59,8 +59,8 @@ jobs:
       - name: Create or update ECS service
         run: |
           aws ecs create-service \
-            --cluster demo-cluster \
-            --service-name demo-service \
+            --cluster demo-cluster1 \
+            --service-name demo-service1 \
             --task-definition ${{ steps.register_task_definition.outputs.task_def }} \
             --desired-count 1 \
             --launch-type FARGATE
