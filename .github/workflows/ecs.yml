@@ -18,23 +18,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-
       - name: Retrieve AWS ECR login password
         id: ecr_login
         run: |
           echo "::set-output name=password::$(aws ecr get-login-password --region ${{ secrets.AWS_DEFAULT_REGION }})"
-
-          
+        
       - name: Login to AWS ECR
-        run: aws ecr get-login-password --region ${{ secrets.AWS_DEFAULT_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com
+        run: echo "${{ steps.ecr_login.outputs.password }}" | docker login --username AWS --password-stdin 891377199948.dkr.ecr.us-east-1.amazonaws.com
 
       - name: Build and push Docker image
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest
+          docker buildx build --platform linux/amd64 -t 891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest .
+          docker push 891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
 
       - name: Set up AWS credentials for ECS deployment
-        uses: aws-actions/configure-aws-credentials@v2
+        id: aws_credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
