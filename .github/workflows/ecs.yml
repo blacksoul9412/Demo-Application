@@ -72,8 +72,7 @@ jobs:
                     }
                   }
                 }
-              ]
-              
+              ]' \   
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
