@@ -18,29 +18,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Retrieve AWS temporary credentials
-        id: aws_temp_credentials
-        run: |
-          TEMP_CREDS=$(aws sts assume-role --role-arn "arn:aws:iam::891377199948:role/Demo_App_Role" --role-session-name "GitHubActionSession")
-          export AWS_ACCESS_KEY_ID=$(echo $TEMP_CREDS | jq -r '.Credentials.AccessKeyId')
-          export AWS_SECRET_ACCESS_KEY=$(echo $TEMP_CREDS | jq -r '.Credentials.SecretAccessKey')
-          export AWS_SESSION_TOKEN=$(echo $TEMP_CREDS | jq -r '.Credentials.SessionToken')
-
-      - name: Configure Docker to use AWS ECR
-        run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_DEFAULT_REGION }} | docker login --username AWS --password-stdin ***.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com
+      - name: Login to AWS ECR
+        run: aws ecr get-login-password --region ${{ secrets.AWS_DEFAULT_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com
 
       - name: Build and push Docker image
         run: |
-          docker buildx build --platform linux/amd64 -t ***.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest .
-          docker push ***.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest
+          docker buildx build --platform linux/amd64 -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest
 
       - name: Set up AWS credentials for ECS deployment
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ steps.aws_temp_credentials.outputs.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ steps.aws_temp_credentials.outputs.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ steps.aws_temp_credentials.outputs.AWS_SESSION_TOKEN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Register ECS task definition
