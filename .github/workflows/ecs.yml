@@ -25,6 +25,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Create ECS Cluster
+        run: |
+          aws ecs create-cluster --cluster-name demo-cluster1 --region us-east-1 || true
+
       - name: Create ECR Repository
         run: |
           aws ecr create-repository --repository-name demo-app1 --region us-east-1 || true
@@ -50,8 +54,8 @@ jobs:
       - name: Create or update ECS service
         run: |
           aws ecs create-service \
-            --cluster demo-cluster \
-            --service-name demo-service \
+            --cluster demo-cluster1 \
+            --service-name demo-service1 \
             --task-definition ${{ steps.register_task_definition.outputs.task_def }} \
             --desired-count 1 \
             --launch-type FARGATE
