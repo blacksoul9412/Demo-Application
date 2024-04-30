@@ -27,19 +27,19 @@ jobs:
 
       - name: Login to AWS ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_DEFAULT_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 891377199948.dkr.ecr.us-east-1.amazonaws.com
 
       - name: Build and push Docker image
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest
+          docker buildx build --platform linux/amd64 -t 891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest .
+          docker push 891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest
 
       - name: Register ECS task definition
         id: register_task_definition
         run: |
           TASK_DEF=$(aws ecs register-task-definition \
             --family demo-task \
-            --container-definitions '[{"name":"demo-container","image":"'"${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com/demo-repo:latest"'", "memory":512, "memoryReservation":256}]' \
+            --container-definitions '[{"name":"demo-container","image":"'"891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-repo:latest"'", "memory":512, "memoryReservation":256}]' \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
