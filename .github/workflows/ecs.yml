@@ -70,6 +70,13 @@ jobs:
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
 
+      - name: Check if ECS service exists
+        id: check_service
+        run: |
+          SERVICE_EXISTS=$(aws ecs describe-services --cluster demo-cluster1 --service demo-service1 --query 'services' --output text --region us-east-1 || echo "false")
+          echo "::set-output name=service_exists::$SERVICE_EXISTS"
+
+
       - name: Create or update ECS service
         run: |
           aws ecs create-service \
@@ -79,6 +86,15 @@ jobs:
             --desired-count 1 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[subnet-069e2b01e3e2c182e,subnet-09e486e1b79dcd600,subnet-04d3520e9db1c864a,subnet-0d0c791c831d34c91],assignPublicIp=DISABLED}"
+      - name: Update ECS service
+       if: steps.check_service.outputs.service_exists == "true"
+       run: |
+              aws ecs update-service \
+                --cluster demo-cluster1 \
+                --service demo-service1 \
+                --task-definition ${{ steps.register_task_definition.outputs.task_def }} \
+                --desired-count 1 \
+                --region us-east-1 
 
       - name: Define API Gateway Resources and Methods
         run: |
