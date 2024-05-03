@@ -16,11 +16,11 @@ jobs:
       - name: Login to AWS ECR
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registry: 891377199948.dkr.ecr.us-east-1.amazonaws.com
-          region: us-east-1
-          mask-password: true
-          registry-type: 'private'
-          skip-logout: false
+       registry: 891377199948.dkr.ecr.us-east-1.amazonaws.com
+       region: us-east-1
+       mask-password: true
+       registry-type: 'private'
+            skip-logout: false
 
       - name: Build and push Docker image to ECR
         run: |
