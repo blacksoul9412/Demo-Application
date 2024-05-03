@@ -89,7 +89,7 @@ jobs:
             --task-definition ${{ steps.register_task_definition.outputs.task_def }} \
             --desired-count 1 \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[subnet-069e2b01e3e2c182e,subnet-09e486e1b79dcd600,subnet-04d3520e9db1c864a,subnet-0d0c791c831d34c91],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[subnet-069d14a5bdc238ff4],assignPublicIp=DISABLED}" \
             --region us-east-1 
 
       - name: Update ECS service
