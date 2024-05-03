@@ -99,5 +99,5 @@ jobs:
           aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_RESOURCE_ID --path-part MyResource --region us-east-1
           RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --region us-east-1 --query 'items[1].id' --output text)
           ROLE_ARN=$(aws iam get-role --role-name new_ecs_role  --query 'Role.Arn' --output text)
-          aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type NONE --region us-east-1
+          aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type AWS_IAM --region us-east-1
           aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --type AWS --integration-http-method POST --uri arn:aws:apigateway:us-east-1:ecs:path/arn:aws:ecs:us-east-1:891377199948:cluster/demo-cluster1/service/demo-service1 --credentials $ROLE_ARN --region us-east-1
