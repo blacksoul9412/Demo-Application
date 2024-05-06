@@ -1,40 +1,35 @@
 name: Deploy to AWS ECS
-
-on:
+'on':
   push:
     branches:
       - dev_test
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Login to AWS ECR
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registry: 891377199948.dkr.ecr.us-east-1.amazonaws.com
           region: us-east-1
           mask-password: true
-          registry-type: 'private'
+          registry-type: private
           skip-logout: false
-
       - name: Build and push Docker image to ECR
-        run: |
-          docker build -t 891377199948.dkr.ecr.us-east-1.amazonaws.com/dev_ecr:latest .
-          docker push 891377199948.dkr.ecr.us-east-1.amazonaws.com/dev_ecr:latest
+        run: >
+          docker build -t
+          891377199948.dkr.ecr.us-east-1.amazonaws.com/dev_ecr:latest .
 
+          docker push
+          891377199948.dkr.ecr.us-east-1.amazonaws.com/dev_ecr:latest
       - name: Create ECR repository
         run: |
           aws ecr create-repository --repository-name dev_ecr --region us-east-1
-
       - name: Create ECS cluster
         run: |
           aws ecs create-cluster --cluster-name dev_ecs --region us-east-1
-
       - name: Create IAM role for ECS and ECR
         run: |
           aws iam create-role \
@@ -63,7 +58,6 @@ jobs:
             --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy \
             --role-name ecs-ecr-role \
             --region us-east-1
-
       - name: Create ECS task definition
         run: |
           TASK_DEF=$(aws ecs register-task-definition \
@@ -91,7 +85,6 @@ jobs:
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
-
       - name: Create ECS service
         run: |
           aws ecs create-service \
