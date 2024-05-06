@@ -1,97 +1,113 @@
-name: Deploy to AWS ECS
-'on':
+name: Build and Deploy to AWS ECS
+
+on:
   push:
     branches:
       - dev_test
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      AWS_DEFAULT_REGION: us-east-1
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Login to AWS ECR
-        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          registry: 891377199948.dkr.ecr.us-east-1.amazonaws.com
-          region: us-east-1
-          mask-password: true
-          registry-type: private
-          skip-logout: false
-      - name: Build and push Docker image to ECR
-        run: >
-          docker build -t
-          891377199948.dkr.ecr.us-east-1.amazonaws.com/dev_ecr:latest .
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-          docker push
-          891377199948.dkr.ecr.us-east-1.amazonaws.com/dev_ecr:latest
-      - name: Create ECR repository
+      - name: Create VPC
         run: |
-          aws ecr create-repository --repository-name dev_ecr --region us-east-1
-      - name: Create ECS cluster
-        run: |
-          aws ecs create-cluster --cluster-name dev_ecs --region us-east-1
-      - name: Create IAM role for ECS and ECR
-        run: |
-          aws iam create-role \
-            --role-name ecs-ecr-role \
-            --assume-role-policy-document '{
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Principal": {
-                    "Service": "ecs-tasks.amazonaws.com"
-                  },
-                  "Action": "sts:AssumeRole"
-                }
-              ]
-            }' \
-            --region us-east-1
+          aws ec2 create-vpc --cidr-block 20.0.0.0/16 --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=testing_vpc}]' --region us-east-1
+          # Add additional setup for VPC (subnets, route tables, etc.) if needed
 
-          # Attach policies for ECS and ECR access to the role
-          aws iam attach-role-policy \
-            --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly \
-            --role-name ecs-ecr-role \
-            --region us-east-1
+      - name: Create ECS Cluster
+        run: |
+          aws ecs create-cluster --cluster-name dev_test_cluster --region us-east-1 || true
 
-          aws iam attach-role-policy \
-            --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy \
-            --role-name ecs-ecr-role \
-            --region us-east-1
-      - name: Create ECS task definition
+      - name: Create ECR Repository
+        run: |
+          aws ecr create-repository --repository-name dev_test_ecr --region us-east-1 || true
+
+      - name: Login to AWS ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 891377199948.dkr.ecr.us-east-1.amazonaws.com
+
+      - name: Build and push Docker image
+        run: |
+          docker buildx build --platform linux/amd64 -t 891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-app1:latest . --push
+
+      - name: Register ECS task definition
+        id: register_task_definition
         run: |
           TASK_DEF=$(aws ecs register-task-definition \
-            --family dev_task \
-            --execution-role-arn arn:aws:iam::891377199948:role/ecs-ecr-role \
+            --family demo-task \
+            --execution-role-arn arn:aws:iam::891377199948:role/dev_test_role \
             --network-mode awsvpc \
             --cpu 256 \
             --memory 512 \
             --requires-compatibilities FARGATE \
             --container-definitions '[{
-              "name": "dev_container",
-              "image": "891377199948.dkr.ecr.us-east-1.amazonaws.com/dev_ecr:latest",
+              "name": "demo-container1",
+              "image": "891377199948.dkr.ecr.us-east-1.amazonaws.com/demo-app1:latest",
               "cpu": 256,
               "memory": 512,
               "portMappings": [{"containerPort": 3000,"protocol": "tcp"}],
               "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                  "awslogs-group": "/ecs/dev_ecs",
+                  "awslogs-group": "/ecs/dev_test_cluster",
                   "awslogs-region": "us-east-1",
-                  "awslogs-stream-prefix": "dev_task"
+                  "awslogs-stream-prefix": "ddev_test-task1"
                 }
               }
             }]' \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
-      - name: Create ECS service
+
+      - name: Check if ECS service exists
+        id: check_service
+        run: |
+          SERVICE_EXISTS=$(aws ecs describe-services --cluster dev_test_cluster --service dev_test_service --query 'services' --output text --region us-east-1 || echo "false")
+          echo "::set-output name=service_exists::$SERVICE_EXISTS"
+
+      - name: Create or update ECS service
         run: |
           aws ecs create-service \
-            --cluster dev_ecs \
-            --service-name dev_service \
+            --cluster dev_test_cluster \
+            --service-name dev_test_service \
             --task-definition ${{ steps.register_task_definition.outputs.task_def }} \
             --desired-count 1 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[subnet-07291ec7a96464cbc,subnet-0b654e718a718cde2,subnet-04bc2b9020eac6e0c,subnet-04afa4f80c1b04ac7],assignPublicIp=DISABLED}" \
-            --region us-east-1
+            --region us-east-1 
+
+      - name: Update ECS service
+        if: steps.check_service.outputs.service_exists == 'true'
+        run: |
+          aws ecs update-service \
+            --cluster dev_test_cluster \
+            --service dev_test_service \
+            --task-definition ${{ steps.register_task_definition.outputs.task_def }} \
+            --desired-count 1 \
+            --region us-east-1 
+
+      - name: Define API Gateway Resources and Methods
+        run: |
+          API_ID=$(aws apigateway create-rest-api --name dev_test_api --region us-east-1 --query 'id' --output text)
+          echo "::set-output name=api_id::${API_ID}"
+          ROOT_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --region us-east-1 --query 'items[0].id' --output text)
+          aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_RESOURCE_ID --path-part MyResource --region us-east-1
+          RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --region us-east-1 --query 'items[1].id' --output text)
+          ROLE_ARN=$(aws iam get-role --role-name dev_test_role  --query 'Role.Arn' --output text)
+          aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type AWS_IAM --region us-east-1
+          aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --type AWS --integration-http-method POST --uri arn:aws:apigateway:us-east-1:ecs:path/arn:aws:ecs:us-east-1:891377199948:cluster/demo-cluster1/service/demo-service1 --credentials $ROLE_ARN --region us-east-1
