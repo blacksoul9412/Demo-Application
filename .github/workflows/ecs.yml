@@ -86,7 +86,7 @@ jobs:
             aws ecs create-service \
               --cluster dev_test_cluster \
               --service-name dev_test_service \
-              --task-definition dev-test-task:40 \
+              --task-definition dev-test-task \
               --desired-count 1 \
               --launch-type FARGATE \
               --network-configuration "awsvpcConfiguration={subnets=[subnet-07291ec7a96464cbc,subnet-0b654e718a718cde2,subnet-04bc2b9020eac6e0c,subnet-04afa4f80c1b04ac7],assignPublicIp=DISABLED}" \
@@ -95,7 +95,7 @@ jobs:
             aws ecs update-service \
               --cluster dev_test_cluster \
               --service dev_test_service \
-              --task-definition dev-test-task:40 \
+              --task-definition dev-test-task \
               --desired-count 1 \
               --region us-east-1 
           fi
