@@ -74,32 +74,31 @@ jobs:
             --output text)
           echo "::set-output name=task_def::${TASK_DEF##*/}"
 
-          - name: Check if ECS service exists
-          id: check_service
-          run: |
-            SERVICE_EXISTS=$(aws ecs describe-services --cluster dev_test_cluster --service dev_test_service --query 'services' --output text --region us-east-1 || echo "false")
-            echo "::set-output name=service_exists::$SERVICE_EXISTS"
-        
-           - name: Create or update ECS service
-          run: |
-            if [[ "${{ steps.check_service.outputs.service_exists }}" == 'false' ]]; then
-              aws ecs create-service \
-                --cluster dev_test_cluster \
-                --service-name dev_test_service \
-                --task-definition demo-task:40 \
-                --desired-count 1 \
-                --launch-type FARGATE \
-                --network-configuration "awsvpcConfiguration={subnets=[subnet-07291ec7a96464cbc,subnet-0b654e718a718cde2,subnet-04bc2b9020eac6e0c,subnet-04afa4f80c1b04ac7],assignPublicIp=DISABLED}" \
-                --region us-east-1 
-            else
-              aws ecs update-service \
-                --cluster dev_test_cluster \
-                --service dev_test_service \
-                --task-definition demo-task:40 \
-                --desired-count 1 \
-                --region us-east-1 
-            fi
-        
+      - name: Check if ECS service exists
+        id: check_service
+        run: |
+          SERVICE_EXISTS=$(aws ecs describe-services --cluster dev_test_cluster --service dev_test_service --query 'services' --output text --region us-east-1 || echo "false")
+          echo "::set-output name=service_exists::$SERVICE_EXISTS"
+
+      - name: Create or update ECS service
+        run: |
+          if [[ "${{ steps.check_service.outputs.service_exists }}" == 'false' ]]; then
+            aws ecs create-service \
+              --cluster dev_test_cluster \
+              --service-name dev_test_service \
+              --task-definition demo-task:40 \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[subnet-07291ec7a96464cbc,subnet-0b654e718a718cde2,subnet-04bc2b9020eac6e0c,subnet-04afa4f80c1b04ac7],assignPublicIp=DISABLED}" \
+              --region us-east-1 
+          else
+            aws ecs update-service \
+              --cluster dev_test_cluster \
+              --service dev_test_service \
+              --task-definition demo-task:40 \
+              --desired-count 1 \
+              --region us-east-1 
+          fi
 
       - name: Define API Gateway Resources and Methods
         run: |
