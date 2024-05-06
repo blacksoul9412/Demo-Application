@@ -35,7 +35,7 @@ jobs:
 
       - name: Create ECR Repository
         run: |
-          aws ecr create-repository --repository-name dev_test_ecr --region us-east-1 || true
+          aws ecr create-repository --repository-name dev_test --region us-east-1 || true
 
       - name: Login to AWS ECR
         run: |
