@@ -26,7 +26,7 @@ jobs:
 
       - name: Create VPC
         run: |
-          aws ec2 create-vpc --cidr-block 20.0.0.0/16 --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=testing_vpc}]' --region us-east-1
+          aws ec2 create-vpc --cidr-block 20.0.0.0/16 --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=dev_test_vpc}]' --region us-east-1
           # Add additional setup for VPC (subnets, route tables, etc.) if needed
 
       - name: Create ECS Cluster
